@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pax Animi Signals Demo</title>
+<link rel="stylesheet" href="globals.css">
+<style>
+body { background: var(--bg); }
+.demo-wrap { max-width: 1320px; margin: 0 auto; padding: 24px 20px 56px; display: flex; flex-direction: column; gap: 20px; }
+.controls { background: #fff; border-radius: 20px; padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.controls .label { font-weight: 700; margin-right: 4px; }
+.stage { display: grid; grid-template-columns: 380px 1fr 380px; gap: 24px; align-items: start; }
+@media (max-width: 1180px) { .stage { grid-template-columns: 1fr; justify-items: center; } .engine { width: 100%; max-width: 560px; } }
+.device { width: 380px; max-width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.device-title { font-weight: 700; font-size: 15px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); text-align: center; }
+.frame { border: 10px solid var(--ink); border-radius: 40px; background: var(--bg); height: 740px; overflow-y: auto; position: relative; }
+.statusbar { display: flex; justify-content: space-between; padding: 10px 22px 4px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.screen { padding: 8px 16px 24px; display: flex; flex-direction: column; gap: 14px; }
+.engine { display: flex; flex-direction: column; gap: 14px; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tile { background: #fff; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; border: 2px solid transparent; transition: border-color .3s; }
+.tile.hot { border-color: var(--yellow); }
+.tile .src { font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); }
+.tile .val { font-size: 26px; font-weight: 700; }
+.tile .chg { font-size: 15px; color: var(--ink-soft); }
+.tile.hot .chg { color: var(--yellow-ink); font-weight: 700; }
+.steps { background: var(--ink); color: #fff; border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+.steps h3 { font-size: 15px; letter-spacing: .05em; text-transform: uppercase; color: #f28b82; }
+.step { display: flex; gap: 12px; align-items: flex-start; opacity: .45; transition: opacity .3s; }
+.step.on { opacity: 1; }
+.dot { flex: 0 0 28px; height: 28px; border-radius: 50%; border: 2px solid #c9d1da; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; }
+.step.done .dot { background: #f28b82; border-color: #f28b82; color: var(--ink); }
+.step .t { font-weight: 700; }
+.step .d { color: #c9d1da; font-size: 15px; }
+.day { font-size: 15px; color: var(--ink-soft); text-align: center; min-height: 22px; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 14px; font-weight: 700; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 10; }
+.toast.show { opacity: 1; }
+.tag.red-flag { border-color: var(--red); }
+.tag.red-flag[aria-pressed="true"] { background: var(--red); border-color: var(--red); }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.okline { font-size: 15px; color: var(--ink-soft); }
+.calm { border: 2px solid var(--green); }
+.mini { font-size: 15px; }
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="index.html#/demo"><svg width="22" height="20" viewBox="0 0 72 64" aria-hidden="true"><path d="M36 62 C14 46 2 34 2 19 C2 9 10 2 19 2 C26 2 32 6 36 12 C40 6 46 2 53 2 C62 2 70 9 70 19 C70 34 58 46 36 62 Z" fill="currentColor"/></svg> Pax Animi</a>
+  <nav>
+    <a class="navlink on" href="trend.html">Signals demo</a>
+    <a class="navlink" href="index.html#/frank">Frank</a>
+    <a class="navlink" href="index.html#/family">Linda (daughter)</a>
+    <a class="navlink" href="index.html#/demo">All demos</a>
+  </nav>
+  <span class="chip">Demo data</span>
+</header>
+
+<main class="demo-wrap">
+  <div class="stack">
+    <p class="eyebrow">Live demo</p>
+    <h1 class="h1">When the signals add up: ask Frank first, then act</h1>
+  </div>
+
+  <div class="controls">
+    <span class="label">Try it:</span>
+    <button class="btn btn-dark" data-a="runTrend">Weight and heart rate climb</button>
+    <button class="btn" data-a="runWalk">Heart rate up from a walk</button>
+    <button class="btn-link" data-a="reset">Reset</button>
+  </div>
+
+  <div class="stage">
+    <section class="device" aria-label="Frank's phone">
+      <p class="device-title">Frank’s phone · age 78</p>
+      <div class="frame"><div class="statusbar"><span id="fClock">8:58 AM</span><span>Pax Animi</span></div><div class="screen" id="frank"></div></div>
+    </section>
+
+    <section class="engine" aria-label="What Pax Animi sees">
+      <p class="device-title">What Pax Animi sees</p>
+      <div class="tiles">
+        <div class="tile" id="tScale"><span class="src">Smart scale</span><span class="val" id="vScale">182.3 lbs</span><span class="chg" id="cScale">Steady</span></div>
+        <div class="tile" id="tWatch"><span class="src">Watch · resting heart</span><span class="val" id="vWatch">68 bpm</span><span class="chg" id="cWatch">His usual</span></div>
+        <div class="tile" id="tPhone"><span class="src">Phone · steps</span><span class="val" id="vPhone">5,200</span><span class="chg" id="cPhone">His usual</span></div>
+        <div class="tile"><span class="src">Patient portal</span><span class="val">Heart failure</span><span class="chg">Water pill · home 6 days ago</span></div>
+      </div>
+      <p class="day" id="day"></p>
+      <div class="steps">
+        <h3>Pax Animi engine</h3>
+        <div class="step" id="s1"><span class="dot">1</span><div><p class="t">Spot the pattern</p><p class="d" id="d1">Compares every reading with Frank’s own normal</p></div></div>
+        <div class="step" id="s2"><span class="dot">2</span><div><p class="t">Rule out normal causes</p><p class="d" id="d2">Workout logged? Slow change over months?</p></div></div>
+        <div class="step" id="s3"><span class="dot">3</span><div><p class="t">Ask Frank first</p><p class="d" id="d3">A quick symptom check-in decides what happens next</p></div></div>
+        <div class="step" id="s4"><span class="dot">4</span><div><p class="t">Bring in family if needed</p><p class="d" id="d4">Linda hears only when it matters</p></div></div>
+      </div>
+    </section>
+
+    <section class="device" aria-label="Linda's phone">
+      <p class="device-title">Linda’s phone · his daughter</p>
+      <div class="frame"><div class="statusbar"><span id="lClock">8:58 AM</span><span>Pax Animi</span></div><div class="screen" id="linda"></div></div>
+    </section>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var S, timers = [];
+  var RED = ["Short of breath while resting", "Chest pain"];
+  var SYM = ["Swollen ankles or feet", "Short of breath when walking or lying down", "Needed extra pillows to sleep", "Coughing at night", "More tired than usual"];
+  function fresh(){ return { mode: "calm", picked: [], shared: false, handled: false, talked: false, clock: "8:58 AM" }; }
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+  function clear(){ timers.forEach(clearTimeout); timers = []; }
+  function later(ms, fn){ timers.push(setTimeout(fn, ms)); }
+  function toast(msg){ var t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.h); toast.h = setTimeout(function(){ t.classList.remove("show"); }, 2200); }
+  function setClock(c){ S.clock = c; $("fClock").textContent = c; $("lClock").textContent = c; }
+
+  function tile(id, val, chg, hot){ $("v"+id).textContent = val; $("c"+id).textContent = chg; $("t"+id).classList.toggle("hot", !!hot); }
+  function step(n, state, text){ var el = $("s"+n); el.classList.toggle("on", state !== "off"); el.classList.toggle("done", state === "done"); if (text) $("d"+n).textContent = text; }
+  function resetEngine(){
+    tile("Scale", "182.3 lbs", "Steady"); tile("Watch", "68 bpm", "His usual"); tile("Phone", "5,200", "His usual");
+    step(1, "off", "Compares every reading with Frank’s own normal");
+    step(2, "off", "Workout logged? Slow change over months?");
+    step(3, "off", "A quick symptom check-in decides what happens next");
+    step(4, "off", "Linda hears only when it matters");
+    $("day").textContent = "";
+  }
+
+  /* ---------- Frank's phone ---------- */
+  function frankHome(extra){
+    return '<p class="soft">Good morning, Frank</p>' +
+      '<div class="card calm"><p class="h1" style="color:var(--green)">You’re doing well</p><p>Your heart, weight and blood pressure look normal for you today. Nothing to do.</p></div>' +
+      (extra || "") +
+      '<div class="metric"><div><p class="h2">Heart</p><p class="small soft">Calm and steady</p></div><span class="pill pill-green">Normal</span></div>' +
+      '<div class="metric"><div><p class="h2">Weight</p><p class="small soft">Steady this week</p></div><span class="pill pill-green">Normal</span></div>' +
+      '<div class="metric"><div><p class="h2">Blood pressure</p><p class="small soft">Normal for you</p></div><span class="pill pill-green">Normal</span></div>';
+  }
+  function frankCheckin(){
+    var tags = SYM.map(function(s){ return '<button class="tag" data-a="pick" data-v="'+esc(s)+'" aria-pressed="'+(S.picked.indexOf(s)>=0)+'">'+esc(s)+'</button>'; }).join("");
+    var reds = RED.map(function(s){ return '<button class="tag red-flag" data-a="pick" data-v="'+esc(s)+'" aria-pressed="'+(S.picked.indexOf(s)>=0)+'">'+esc(s)+'</button>'; }).join("");
+    var none = '<button class="tag" data-a="pick" data-v="none" aria-pressed="'+(S.picked.indexOf("none")>=0)+'">None, I feel fine</button>';
+    return '<div class="banner"><div class="banner-top yellow"><p class="eyebrow" style="color:var(--yellow-ink)">Quick check-in</p><p class="h2">Frank, your weight is up 4 lbs since Thursday, and your heart is beating faster than usual.</p></div>' +
+      '<div class="banner-body"><p>Sometimes this means your body is holding extra fluid. Do you have any of these?</p><div class="tags">'+tags+reds+none+'</div>' +
+      '<button class="btn btn-dark btn-block btn-huge" data-a="send" '+(S.picked.length?"":"disabled")+'>Send</button>' +
+      '<p class="note mini">No answer in 2 hours? We’ll let Linda know.</p></div></div>';
+  }
+  function frankGreen(){
+    var share = S.shared ? '<p class="info mini">Shared with Linda. She can see your weight is up this week.</p>'
+                         : '<button class="btn btn-block" data-a="share">Share details with Linda</button>';
+    return '<div class="card ring-green"><p class="h1" style="color:var(--green)">Thanks, Frank. You’re all set today.</p><p>We’ll check again tomorrow. If your weight keeps climbing, we’ll suggest calling Dr. Okafor, even if you feel fine.</p></div>' + share +
+      '<p class="okline">Linda only sees that you checked in, unless you share more.</p>';
+  }
+  function frankYellow(){
+    var follow = S.talked
+      ? '<div class="card ring-green"><p class="h2" style="color:var(--green)">Great. Your doctor knows.</p><p class="mini soft">Linda has been told it’s handled.</p></div>'
+      : '<div class="card"><p class="eyebrow">This evening</p><p class="h2">Did you reach Dr. Okafor?</p><button class="btn btn-dark btn-block" data-a="talked">Yes, I talked to my doctor</button></div>';
+    return '<div class="banner"><div class="banner-top yellow"><p class="eyebrow" style="color:var(--yellow-ink)">Today</p><p class="h1">Call Dr. Okafor’s office today</p></div>' +
+      '<div class="banner-body"><p>This could be extra fluid, an early sign your heart failure needs attention. It is easier to treat now than later.</p>' +
+      '<button class="btn btn-dark btn-huge btn-block" data-a="call" data-v="Dr. Okafor’s office">Call Dr. Okafor</button>' +
+      '<div class="card" style="background:var(--bg)"><p class="eyebrow">Read this to the nurse</p><ul class="mini" style="margin:0;padding-left:20px"><li>Weight up 4 lbs in 5 days (182 to 186)</li><li>Resting heart rate 83, usual 68</li>'+S.picked.filter(function(p){return p!=="none";}).map(function(p){return '<li>'+esc(p)+'</li>';}).join("")+'<li>Takes furosemide 40 mg (water pill)</li></ul></div></div></div>' + follow;
+  }
+  function frankRed(){
+    return '<div class="banner"><div class="banner-top red"><p class="eyebrow" style="color:#fff">Urgent</p><p class="h1">Call 911 now</p><p>Trouble breathing at rest or chest pain needs help right away.</p></div>' +
+      '<div class="banner-body"><button class="btn btn-red btn-huge btn-block" data-a="call" data-v="911">Call 911</button>' +
+      '<p class="info mini">Linda has been told and is calling you.</p>' +
+      '<div class="card" style="background:var(--bg)"><p class="eyebrow">Emergency card for paramedics</p><p class="mini"><b>Frank, 78.</b> Heart failure. Home from the hospital 6 days ago.<br>Meds: furosemide, lisinopril, metoprolol. Allergic to penicillin.<br>Doctor: Dr. Okafor, cardiology.</p></div></div></div>';
+  }
+  function frankWaiting(){
+    return frankCheckin() + '<p class="okline">Frank hasn’t answered yet.</p>';
+  }
+
+  /* ---------- Linda's phone ---------- */
+  function lindaHead(){ return '<div class="between"><p class="eyebrow">Pax Animi</p><p class="small soft">Watching over Dad</p></div>'; }
+  function lindaCalm(sub){
+    return lindaHead() + '<div class="card calm"><p class="h1">Dad is okay.</p><p class="soft">'+(sub || "Nothing needs you today.")+'</p></div>' +
+      '<p class="h2">This week</p><div class="grid2" style="grid-template-columns:1fr 1fr"><div class="metric"><span class="small">Check-ins</span><b>6 of 6</b></div><div class="metric"><span class="small">Watch worn</span><b>Daily</b></div></div>';
+  }
+  function lindaGreen(){
+    var extra = S.shared ? '<div class="card"><p class="h2">Dad shared: his weight is up 4 lbs this week.</p><p class="mini soft">He feels fine. Pax Animi will check again tomorrow.</p></div>' : "";
+    return lindaHead() + '<div class="card calm"><p class="h1">Dad checked in.</p><p class="soft">Feeling good today.</p></div>' + extra;
+  }
+  function lindaYellow(){
+    if (S.talked) return lindaHead() + '<div class="card ring-green"><p class="h1">Handled.</p><p class="soft">Dad talked to Dr. Okafor this afternoon.</p></div>';
+    var handled = S.handled ? '<p class="info mini">You marked this: “I’ve got this.”</p>' : '<button class="btn-link" data-a="handled">I’ve got this</button>';
+    return lindaHead() + '<div class="card ring-yellow"><p class="pill pill-yellow" style="align-self:flex-start">Worth a call today</p><p class="h2">Dad has signs of fluid buildup. He’s calling Dr. Okafor today.</p>' +
+      '<p class="mini soft">Weight up 4 lbs in 5 days, heart rate up, and he reported: '+esc(S.picked.filter(function(p){return p!=="none";}).join(", ").toLowerCase())+'.</p>' +
+      '<button class="btn btn-dark" data-a="call" data-v="Dad">Call Dad</button>'+handled+'</div>';
+  }
+  function lindaRed(){
+    return lindaHead() + '<div class="banner"><div class="banner-top red"><p class="eyebrow" style="color:#fff">Urgent</p><p class="h2">Dad reported '+esc(S.picked.filter(function(p){return RED.indexOf(p)>=0;}).join(" and ").toLowerCase())+'.</p><p>He’s been told to call 911.</p></div>' +
+      '<div class="banner-body"><button class="btn btn-dark btn-huge btn-block" data-a="call" data-v="Dad">Call Dad</button><button class="btn btn-red btn-block" data-a="call" data-v="911">Call 911</button><p class="mini soft">Lockbox on the back door. Code: ask Dad’s neighbor.</p></div></div>';
+  }
+  function lindaNoAnswer(){
+    return lindaHead() + '<div class="card ring-yellow"><p class="pill pill-yellow" style="align-self:flex-start">Worth a quick call</p><p class="h2">Dad hasn’t answered his check-in.</p><p class="mini soft">His weight is up 4 lbs in 5 days and his heart rate is up. Give him a call?</p><button class="btn btn-dark" data-a="call" data-v="Dad">Call Dad</button></div>';
+  }
+
+  function render(){
+    var f = $("frank"), l = $("linda");
+    switch (S.mode) {
+      case "calm": f.innerHTML = frankHome(); l.innerHTML = lindaCalm(); break;
+      case "walk": f.innerHTML = frankHome('<p class="info mini">Nice walk this morning: 45 minutes.</p>'); l.innerHTML = lindaCalm(); break;
+      case "checkin": f.innerHTML = frankCheckin(); l.innerHTML = lindaCalm("Pax Animi is checking in with him."); break;
+      case "green": f.innerHTML = frankGreen(); l.innerHTML = lindaGreen(); break;
+      case "yellow": f.innerHTML = frankYellow(); l.innerHTML = lindaYellow(); break;
+      case "red": f.innerHTML = frankRed(); l.innerHTML = lindaRed(); break;
+      case "noanswer": f.innerHTML = frankWaiting(); l.innerHTML = lindaNoAnswer(); break;
+    }
+    if (S.mode === "checkin") {
+      $("frank").insertAdjacentHTML("beforeend", '<button class="btn-link" data-a="skip">Demo: skip ahead 2 hours with no answer</button>');
+    }
+  }
+
+  function reset(){ clear(); S = fresh(); setClock("8:58 AM"); resetEngine(); render(); }
+
+  function runTrend(){
+    reset();
+    var days = [["Monday", "182.3", 68, "5,200"], ["Tuesday", "183.1", 71, "4,600"], ["Wednesday", "184.2", 75, "3,700"], ["Thursday", "185.5", 79, "2,900"], ["Friday", "186.4", 83, "2,100"]];
+    step(1, "on", "Watching...");
+    days.forEach(function(d, i){
+      later(600 * i + 200, function(){
+        $("day").textContent = d[0];
+        var up = (parseFloat(d[1]) - 182.3).toFixed(1);
+        tile("Scale", d[1] + " lbs", i ? "Up " + up + " lbs in " + (i+1) + " days" : "Steady", i >= 2);
+        tile("Watch", d[2] + " bpm", i ? "Up " + (d[2]-68) + " from his usual" : "His usual", i >= 2);
+        tile("Phone", d[3], i ? "Down " + Math.round((5200 - parseInt(d[3].replace(",", ""))) / 52) + "% from usual" : "His usual", i >= 2);
+      });
+    });
+    later(3400, function(){ step(1, "done", "Weight up 4.1 lbs in 5 days, resting heart rate up 15, walking 60% less. He has heart failure."); });
+    later(4400, function(){ step(2, "done", "No workout logged. The gain is sudden, not slow. Not explained."); });
+    later(5400, function(){ setClock("9:04 AM"); step(3, "on", "Check-in sent to Frank at 9:04 AM"); S.mode = "checkin"; render(); });
+  }
+
+  function runWalk(){
+    reset();
+    step(1, "on", "Watching...");
+    later(300, function(){ $("day").textContent = "Friday, 8:15 AM"; tile("Watch", "96 bpm", "Up 28 from his usual", true); });
+    later(1300, function(){ step(1, "done", "Heart rate up 28. Weight steady."); });
+    later(2300, function(){ step(2, "done", "Explained: 45-minute walk logged on his watch. No alert."); tile("Watch", "96 bpm", "During a walk: normal", false); });
+    later(3000, function(){ step(3, "off", "Not needed. Frank isn’t bothered."); step(4, "off", "Not needed. Linda isn’t bothered."); S.mode = "walk"; render(); });
+  }
+
+  function send(){
+    var p = S.picked;
+    var red = p.some(function(x){ return RED.indexOf(x) >= 0; });
+    step(3, "done", p.indexOf("none") >= 0 ? "Frank says he feels fine." : "Frank reported: " + p.join(", ").toLowerCase() + ".");
+    if (red) { S.mode = "red"; step(4, "done", "Red flag. Linda alerted right away."); }
+    else if (p.indexOf("none") >= 0) { S.mode = "green"; step(4, "done", "Linda sees he checked in. Pax Animi checks again tomorrow."); }
+    else { S.mode = "yellow"; step(4, "done", "Frank told to call his doctor today. Linda told what’s going on."); }
+    render();
+  }
+
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-a]"); if (!b) return;
+    var a = b.getAttribute("data-a"), v = b.getAttribute("data-v");
+    if (a === "runTrend") runTrend();
+    else if (a === "runWalk") runWalk();
+    else if (a === "reset") reset();
+    else if (a === "pick") {
+      if (v === "none") S.picked = S.picked.indexOf("none") >= 0 ? [] : ["none"];
+      else { S.picked = S.picked.filter(function(x){ return x !== "none"; }); var i = S.picked.indexOf(v); if (i >= 0) S.picked.splice(i, 1); else S.picked.push(v); }
+      render();
+    }
+    else if (a === "send") send();
+    else if (a === "share") { S.shared = true; render(); }
+    else if (a === "talked") { S.talked = true; setClock("6:30 PM"); step(4, "done", "Handled: Frank talked to Dr. Okafor. Linda told."); render(); }
+    else if (a === "handled") { S.handled = true; render(); }
+    else if (a === "skip") { setClock("11:04 AM"); step(3, "done", "No answer after 2 hours."); step(4, "done", "Linda nudged to call Dad."); S.mode = "noanswer"; render(); }
+    else if (a === "call") toast("Demo: this would call " + v);
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>
